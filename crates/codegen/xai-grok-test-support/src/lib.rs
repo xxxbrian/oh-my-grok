@@ -16,7 +16,7 @@
 //! - [`leader::LeaderStdioClient`] — ACP client that drives `grok agent --leader stdio` (unix)
 //! - [`TestSandbox`] — Own isolated paths, hermetic child env, optional git setup, diagnostics
 //! - [`TestProcess`] — Own detached child lifecycle, process-tree teardown, bounded output tails
-//! - [`run_headless`] — Run `grok -p` against the mock server and capture output
+//! - [`run_headless`] — Run `omg -p` against the mock server and capture output
 //! - [`git_workdir`] — Create a git-initialized [`TestSandbox`]
 //! - [`grok_binary`] — Resolve the grok binary path (GROK_BINARY env or cargo_bin)
 //! - [`spawn_counting_server`] — Connection-counting HTTP/1.1 server for wire/pooling tests
@@ -24,7 +24,7 @@
 //! - [`ResourceSnapshot`] — RSS/threads/fds sampling for soak tests
 /// Multiply a harness timeout by `GROK_TEST_TIMEOUT_SCALE` (positive integer,
 /// default 1). CI lanes on shared runner pools raise it so pool load slows
-/// tests instead of failing them (see the Grok Build merge CI workflow).
+/// tests instead of failing them (see the Oh My Grok merge CI workflow).
 pub fn scaled(base: std::time::Duration) -> std::time::Duration {
     let scale = std::env::var("GROK_TEST_TIMEOUT_SCALE")
         .ok()

@@ -13,6 +13,7 @@
 //! before merge. Requirements layers (#4–#6) may opt into fail-closed startup;
 //! see [`validate_requirements`].
 
+pub mod brand;
 pub mod campaigns;
 pub mod config_override;
 pub mod fs_atomic;
@@ -39,6 +40,7 @@ pub use global_hook_sources::{
     resolve_global_hook_sources, unique_ancestors_rootward,
 };
 
+pub use brand::{CLI_NAME, PRODUCT_ABOUT, PRODUCT_NAME, cli_invocation, managed_bin_name};
 #[cfg(unix)]
 pub use global_hook_sources::{
     validate_direct_hook_json_file, validated_hook_json_files_for_sources,

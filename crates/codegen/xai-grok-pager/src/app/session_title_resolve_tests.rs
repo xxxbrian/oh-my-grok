@@ -102,10 +102,7 @@ fn uuid_shaped_arg_never_matches_titles() {
 fn title_miss_hint_escapes_arg_and_suggests_search() {
     let hint = title_miss_hint("evil\ntitle");
     assert!(hint.contains("evil\\ntitle"), "arg must be escaped: {hint}");
-    assert!(
-        hint.contains("grok sessions search"),
-        "missing hint: {hint}"
-    );
+    assert!(hint.contains("omg sessions search"), "missing hint: {hint}");
 }
 
 /// The worktree defer drops the local zero-match context; the failure
@@ -116,7 +113,7 @@ fn worktree_failure_message_hint_follows_threaded_provenance() {
     let msg = worktree_resume_failure_message(Some("typo title"), "restore failed");
     assert!(msg.contains("couldn't resume worktree session: restore failed"));
     assert!(msg.contains("no session id or title matched"), "{msg}");
-    assert!(msg.contains("grok sessions search"), "{msg}");
+    assert!(msg.contains("omg sessions search"), "{msg}");
     let resolved_msg = worktree_resume_failure_message(None, "restore failed");
     assert_eq!(
         resolved_msg,

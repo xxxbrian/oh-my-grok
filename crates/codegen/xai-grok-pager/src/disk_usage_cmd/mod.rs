@@ -28,7 +28,7 @@ const SCHEMA_VERSION: u32 = 1;
 #[command(
     after_help = "Lists every top-level directory in the grok home, largest first, then every \
 worktree under `worktrees/` and `worktree_pool/` with its size, age, and label. To reclaim space, preview a sweep with \
-`grok worktree gc --max-age 7d --dry-run`: without `--max-age`, gc expires nothing, and it \
+`omg worktree gc --max-age 7d --dry-run`: without `--max-age`, gc expires nothing, and it \
 visits only worktrees the registry tracks."
 )]
 pub struct DiskUsageArgs {

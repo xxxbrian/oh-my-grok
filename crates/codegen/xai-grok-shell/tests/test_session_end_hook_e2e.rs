@@ -2,7 +2,7 @@
 //!
 //! Regression for the non-leader quit path that used to cancel the agent
 //! without flushing session actors, so SessionEnd never ran on `/exit` /
-//! `grok -p` exit.
+//! `omg -p` exit.
 //!
 //! `#[ignore]`d by default — needs the grok binary (`GROK_BINARY` or a local
 //! debug build):

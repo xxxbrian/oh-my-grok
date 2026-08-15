@@ -68,7 +68,7 @@ fn firehose_txt_files(home: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
-/// Build a headless `grok -p` command with a pinned `$GROK_HOME` so the firehose
+/// Build a headless `omg -p` command with a pinned `$GROK_HOME` so the firehose
 /// lands under `<home>/.grok/debug`. Firehose env knobs are cleared so the test
 /// is hermetic regardless of the developer's shell.
 fn debug_cmd(
@@ -130,7 +130,7 @@ async fn read_session_firehose_when_ready(path: &Path, client: &GrokStdioClient)
 /// `--debug` (headless) runs cleanly: arg-parsing + the master switch + tracing
 /// init don't crash. Per-session routing + content is proven deterministically by
 /// the live `agent` tests (incl. `debug_flag_master_switch_enables_firehose`); a
-/// headless `grok -p` client is near-silent, so its lazily-opened firehose may
+/// headless `omg -p` client is near-silent, so its lazily-opened firehose may
 /// legitimately stay empty here — file existence is intentionally not asserted.
 #[tokio::test]
 #[ignore] // requires pre-built binary; run with --ignored

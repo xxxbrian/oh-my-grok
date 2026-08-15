@@ -532,7 +532,7 @@ pub const PAGER_COMMAND_KEYS: &[&str] = &[
     "workflows",
     "yolo",
 ];
-/// Unconditional reservations for `grok inspect`. Live advertising still
+/// Unconditional reservations for `omg inspect`. Live advertising still
 /// includes currently gated-on shell builtins plus [`PAGER_COMMAND_KEYS`].
 static RESERVED_SLASH_NAMES: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
     let mut taken: HashSet<&'static str> = PAGER_COMMAND_KEYS.iter().copied().collect();
@@ -1313,7 +1313,7 @@ impl BuiltinAction {
 /// How to rewrite the user's prompt when a slash command resolves to a skill.
 ///
 /// - `RewriteToRun` (default): replace `/foo args` with `"run /foo args"`,
-///   matching today's Grok Build flow that calls our dedicated `skill` tool.
+///   matching today's Oh My Grok flow that calls our dedicated `skill` tool.
 /// - `Passthrough`: leave the prompt verbatim. Some templates use this —
 ///   the model is trained to spot a leading `/<name>`, look it up in the
 ///   `<agent_skills>` listing, and call the Read tool on `fullPath`.

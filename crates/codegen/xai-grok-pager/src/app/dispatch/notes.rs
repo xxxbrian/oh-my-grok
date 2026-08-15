@@ -21,7 +21,7 @@ fn next_rewrite_nonce() -> u64 {
 }
 
 /// Bare `/feedback` pane label (first paragraph of the question chrome).
-pub(crate) const FEEDBACK_QUESTION_LABEL: &str = "How can we improve Grok Build?";
+pub(crate) const FEEDBACK_QUESTION_LABEL: &str = "How can we improve Oh My Grok?";
 
 /// Shared by the pane guard and the send path so both say the same thing.
 const NO_SESSION_NOTICE: &str = "No active session";
@@ -136,7 +136,7 @@ pub(super) fn dispatch_send_feedback(app: &mut AppView, text: String) -> Vec<Eff
     };
 
     agent.scrollback.push_block(RenderBlock::system(
-        "Thanks for the feedback! The Grok Build team is on it.".to_string(),
+        "Thanks for the feedback! The Oh My Grok team is on it.".to_string(),
     ));
 
     vec![Effect::SendFeedback {

@@ -1,4 +1,4 @@
-//! Headless mode (`grok -p`) test runner.
+//! Headless mode (`omg -p`) test runner.
 //!
 //! Runs the grok binary as a subprocess with the mock server, captures output.
 
@@ -31,7 +31,7 @@ fn headless_timeout() -> Duration {
 
 const HEADLESS_DRAIN_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Run `grok` with the given args against the mock server, bounded by the
+/// Run `omg` with the given args against the mock server, bounded by the
 /// scaled headless timeout. Uses an isolated HOME and disables telemetry.
 pub async fn run_headless(
     server: &MockInferenceServer,

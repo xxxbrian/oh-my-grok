@@ -17,7 +17,7 @@ enum RequiredRangeDecision {
 pub(crate) enum VersionPolicyError {
     #[error(
         "Cannot install Grok {target}: the minimum allowed version is {minimum}. \
-         Run `grok update` to install the latest allowed version."
+         Rebuild and install an approved version from source."
     )]
     TargetBelowFloor { target: String, minimum: String },
 }
@@ -81,14 +81,14 @@ fn required_range_message(decision: &RequiredRangeDecision) -> Option<String> {
         RequiredRangeDecision::Below { current, minimum } => Some(format!(
             "This version of Grok ({current}) is older than the minimum required \
              by your organization ({minimum}).\n\n\
-             Update to an approved version through your organization's approved \
-             method (for example, run `grok update`)."
+             Rebuild and install an approved version at least {minimum} from source, \
+             following your organization's approved method."
         )),
         RequiredRangeDecision::Above { current, maximum } => Some(format!(
             "This version of Grok ({current}) is newer than the maximum allowed \
              by your organization ({maximum}).\n\n\
-             Install an approved version through your organization's approved \
-             method (for example, run `grok update --version {maximum}`)."
+             Rebuild and install an approved version no newer than {maximum} from source, \
+             following your organization's approved method."
         )),
     }
 }
@@ -152,6 +152,12 @@ mod tests {
             )
             .is_ok()
         );
+
+        let message = check_install_target(&hard, "0.1.50")
+            .unwrap_err()
+            .to_string();
+        assert!(message.contains("from source"), "{message}");
+        assert!(!message.contains("omg update"), "{message}");
     }
 
     #[test]
@@ -188,21 +194,22 @@ mod tests {
     }
 
     #[test]
-    fn required_range_message_is_none_only_when_in_range() {
+    fn required_range_message_points_to_source_install() {
         assert!(required_range_message(&RequiredRangeDecision::InRange).is_none());
-        assert!(
+        for message in [
             required_range_message(&RequiredRangeDecision::Below {
                 current: "0.2.99".into(),
                 minimum: "0.2.100".into(),
             })
-            .is_some()
-        );
-        assert!(
+            .unwrap(),
             required_range_message(&RequiredRangeDecision::Above {
                 current: "0.2.200".into(),
                 maximum: "0.2.150".into(),
             })
-            .is_some()
-        );
+            .unwrap(),
+        ] {
+            assert!(message.contains("from source"), "{message}");
+            assert!(!message.contains("omg update"), "{message}");
+        }
     }
 }

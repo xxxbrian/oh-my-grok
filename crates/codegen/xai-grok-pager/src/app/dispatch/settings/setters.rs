@@ -1724,7 +1724,7 @@ pub(in crate::app::dispatch) fn set_default_model(
 
     // Persist the **model ID** (catalog key), not the display name.
     // The shell's `resolve_default_model` matches by slug / map key,
-    // so persisting the human-readable name (e.g. "Grok Build")
+    // so persisting the human-readable name (e.g. "Oh My Grok")
     // would silently fail to resolve on the next startup.
     //
     // Chat (`--chat` / GROK_CHAT_MODE) catalogs use opaque `/rest/modes`

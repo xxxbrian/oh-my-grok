@@ -160,7 +160,7 @@ impl crate::types::tool_metadata::ToolMetadata for TaskTool {
     }
 
     fn description_template(&self) -> &str {
-        // Grok Build normally supplies the description via
+        // Oh My Grok normally supplies the description via
         // `ToolConfig::with_description(...)` using `build_task_description()`
         // in xai-grok-agent/src/builder.rs (live subagent roster). But a
         // registration without an override must still ship a real

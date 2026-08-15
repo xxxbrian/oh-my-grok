@@ -285,7 +285,7 @@ pub trait SlashCommand: Send + Sync {
 
     /// Which render modes this command functions in.
     ///
-    /// Minimal mode (`grok --minimal`) deletes the interactive fullscreen
+    /// Minimal mode (`omg --minimal`) deletes the interactive fullscreen
     /// scrollback pane, the in-app mouse selection path, and the agent
     /// dashboard, handing scroll / search / selection back to the terminal
     /// (K7); a few commands exist only there, because the full TUI solves the

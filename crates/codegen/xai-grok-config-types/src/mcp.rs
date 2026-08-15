@@ -76,7 +76,7 @@ pub enum McpServerProblemSeverity {
 }
 
 /// A problem found loading an `[mcp_servers.*]` entry. Reported (never fatal)
-/// and surfaced through `grok inspect`.
+/// and surfaced through `omg inspect`.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct McpServerConfigProblem {

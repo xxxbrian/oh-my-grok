@@ -22,7 +22,7 @@ Memory is experimental and disabled by default.
 ### Per-Session Flag
 
 ```bash
-grok --experimental-memory
+omg --experimental-memory
 ```
 
 ### Environment Variable
@@ -45,7 +45,7 @@ enabled = true
 To disable memory even when other settings enable it:
 
 ```bash
-grok --no-memory
+omg --no-memory
 ```
 
 Or:
@@ -324,7 +324,7 @@ lambda = 0.7             # 0.0 = max diversity, 1.0 = pure relevance
 
 ## CLI Commands
 
-The `grok memory` command manages memory from the shell. It has one subcommand, `clear`:
+The `omg memory` command manages memory from the shell. It has one subcommand, `clear`:
 
 ```bash
 # Clear workspace memory (MEMORY.md, sessions/, and index.sqlite). This is the default scope.
@@ -450,8 +450,8 @@ enabled = true    # default
 
 ### Memory Not Working
 
-1. Verify memory is enabled: check `grok inspect` output.
-2. Check the flag: `grok --experimental-memory` or `GROK_MEMORY=1`.
+1. Verify memory is enabled: check `omg inspect` output.
+2. Check the flag: `omg --experimental-memory` or `GROK_MEMORY=1`.
 3. Check for `--no-memory` or `GROK_MEMORY=0` overriding your config.
 
 ### Memory Not Appearing in Sessions

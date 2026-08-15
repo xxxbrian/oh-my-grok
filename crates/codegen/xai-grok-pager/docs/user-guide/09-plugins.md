@@ -25,7 +25,7 @@ grok plugin marketplace add https://gitlab.com/acme/plugins.git  # any git host,
 grok plugin marketplace add ./my-marketplace                     # a local folder
 ```
 
-List, refresh, and remove sources with `grok plugin marketplace list`, `grok plugin marketplace update [<name>]`, and `grok plugin marketplace remove <url>`.
+List, refresh, and remove sources with `omg plugin marketplace list`, `omg plugin marketplace update [<name>]`, and `omg plugin marketplace remove <url>`.
 
 You can also declare sources in config so they are always present.
 
@@ -75,7 +75,7 @@ The source you install accepts several forms:
 - a full git URL (`https://github.com/user/repo.git`) or SSH (`git@github.com:user/repo.git`)
 - a local path (`./local-dir` or `/absolute/path`)
 
-Run `grok plugin install <source>` without `--trust` and Grok shows the source, warns that installing activates the plugin's hooks, MCP servers, and skills, then stops. Add `--trust` to go ahead. Only install plugins from sources you trust (see [Trust and security](#trust-and-security)).
+Run `omg plugin install <source>` without `--trust` and Grok shows the source, warns that installing activates the plugin's hooks, MCP servers, and skills, then stops. Add `--trust` to go ahead. Only install plugins from sources you trust (see [Trust and security](#trust-and-security)).
 
 A plugin's skills appear in the slash menu. When a skill name is ambiguous, Grok shows the qualified form prefixed by the plugin name, for example `/deploy-tools:release`. To pick up a newly installed plugin, press `r` in the Plugins tab or start a new session.
 
@@ -133,7 +133,7 @@ disabled = ["user/a1b2c3d4/noisy-plugin"]    # names or IDs to skip
 enabled = ["project/9f8e7d6c/team-tools"]    # names or IDs to force on
 ```
 
-Plugins are off by default, so list one in `enabled` to turn it on, or in `disabled` to discover it but skip loading it. Each entry is a plain plugin name (from `grok plugin list`) or a full ID (`<scope>/<hash>/<name>`).
+Plugins are off by default, so list one in `enabled` to turn it on, or in `disabled` to discover it but skip loading it. Each entry is a plain plugin name (from `omg plugin list`) or a full ID (`<scope>/<hash>/<name>`).
 
 To hide the plugins and hooks interface entirely, set `disable_plugins = true` in `~/.grok/pager.toml`.
 
@@ -228,7 +228,7 @@ A `plugin-index.json` catalog lets the marketplace browser show each plugin's sk
 
 ### Check and share it
 
-Validate a plugin before publishing with `grok plugin validate [<path>]`, and tag a release from the manifest version with `grok plugin tag [<path>] [--push]`. Then point people at the repository. They add it once and install the plugins they want:
+Validate a plugin before publishing with `omg plugin validate [<path>]`, and tag a release from the manifest version with `omg plugin tag [<path>] [--push]`. Then point people at the repository. They add it once and install the plugins they want:
 
 ```bash
 grok plugin marketplace add my-org/my-org-plugins   # GitHub shorthand, a git URL, or a local path
@@ -255,7 +255,7 @@ Add the source, and turn on the plugins you want, in `managed_config.toml`:
 name = "My Org Plugins"
 git = "https://github.com/my-org/my-org-plugins.git"
 
-# Plugins stay off until enabled. List plugin names (from `grok plugin list`)
+# Plugins stay off until enabled. List plugin names (from `omg plugin list`)
 # or full IDs (`<scope>/<hash>/<name>`).
 [plugins]
 enabled = ["gdrive"]
@@ -319,15 +319,15 @@ Marketplaces distribute Grok content: skills, commands, agents, hooks, and MCP s
 
 ## Troubleshooting
 
-**A plugin you installed isn't showing up.** Plugins are off until enabled. Check `grok plugin list`, then add the plugin's name or ID to `[plugins].enabled`, or press `Space` on it in the Plugins tab. Reload with `r` in the Plugins tab or start a new session.
+**A plugin you installed isn't showing up.** Plugins are off until enabled. Check `omg plugin list`, then add the plugin's name or ID to `[plugins].enabled`, or press `Space` on it in the Plugins tab. Reload with `r` in the Plugins tab or start a new session.
 
 **A plugin's hooks or MCP servers don't run.** They stay inactive until the plugin is trusted. Reinstall with `--trust`, or place the plugin under `~/.grok/plugins/` (auto-trusted). See [Trust and security](#trust-and-security).
 
-**A skill or MCP server from a marketplace is missing.** Refresh the source with `grok plugin marketplace update`, confirm the plugin is installed and enabled, and, if your organization restricts sources, check that the marketplace is still allowed (see [Distribute across an organization](#distribute-across-an-organization)). Some MCP servers require a sign-in and will not appear until you authenticate.
+**A skill or MCP server from a marketplace is missing.** Refresh the source with `omg plugin marketplace update`, confirm the plugin is installed and enabled, and, if your organization restricts sources, check that the marketplace is still allowed (see [Distribute across an organization](#distribute-across-an-organization)). Some MCP servers require a sign-in and will not appear until you authenticate.
 
 **An install is refused as unpinned.** Your deployment requires pinned commits. Install an exact commit (`owner/repo@<sha>`), or use a marketplace whose `plugin-index.json` publishes `sha` values. See [Require pinned versions](#require-pinned-versions).
 
-**See exactly what loaded.** Run `grok inspect` (add `--json` for machine-readable output) to list every discovered plugin and the skills, agents, hooks, and MCP servers it provides, each labeled with its `plugin: <name>` source.
+**See exactly what loaded.** Run `omg inspect` (add `--json` for machine-readable output) to list every discovered plugin and the skills, agents, hooks, and MCP servers it provides, each labeled with its `plugin: <name>` source.
 
 ---
 
@@ -355,12 +355,12 @@ Grok discovers plugins from these locations, in priority order. The `.claude/plu
 | Location | Scope | Trust |
 |----------|-------|-------|
 | `_meta.pluginDirs` (`session/new` / `session/load`) | Session, that session only | Trusted automatically |
-| `--plugin-dir` (the `grok agent … stdio` flag) | Process, that agent process only | Trusted automatically |
+| `--plugin-dir` (the `omg agent … stdio` flag) | Process, that agent process only | Trusted automatically |
 | `.grok/plugins/` | Project, shared through version control | Requires trust |
 | `~/.grok/plugins/` | User, every project | Trusted automatically |
 | `[plugins].paths` (config) | Custom directories you add | Depends on location |
 
-The `_meta.pluginDirs` field on the `session/new` and `session/load` requests loads plugins for a single session; because the caller supplies the directory, those plugins are trusted automatically and do not persist after the session. `--plugin-dir` is the process-wide equivalent for a dedicated `grok agent … stdio` process, repeatable (`grok agent --no-leader --plugin-dir A --plugin-dir B stdio`), and ignored in leader mode, where the shared leader discovers its own plugins.
+The `_meta.pluginDirs` field on the `session/new` and `session/load` requests loads plugins for a single session; because the caller supplies the directory, those plugins are trusted automatically and do not persist after the session. `--plugin-dir` is the process-wide equivalent for a dedicated `omg agent … stdio` process, repeatable (`omg agent --no-leader --plugin-dir A --plugin-dir B stdio`), and ignored in leader mode, where the shared leader discovers its own plugins.
 
 ### Environment variables in plugin hooks
 

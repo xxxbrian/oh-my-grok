@@ -1687,7 +1687,7 @@ pub fn load_mcp_server_configs_with_project(
 }
 
 /// MCP config problems across the same layers as
-/// [`load_mcp_server_configs_with_project`], for `grok inspect`.
+/// [`load_mcp_server_configs_with_project`], for `omg inspect`.
 pub(crate) fn load_mcp_server_problems_with_project(
     cwd: &std::path::Path,
 ) -> Vec<McpServerConfigProblem> {
@@ -1725,7 +1725,7 @@ pub fn disabled_mcp_server_names(cwd: &std::path::Path) -> std::collections::Has
     disabled
 }
 
-/// Names `grok mcp enable`/`disable` may target: user/project TOML (including
+/// Names `omg mcp enable`/`disable` may target: user/project TOML (including
 /// setup-required/invalid entries that session merge drops), the user
 /// `disabled_mcp_servers` list, compat JSON (`.mcp.json`, Claude, Cursor), and
 /// **plugin** MCP servers (same discovery as doctor/`/mcps`).

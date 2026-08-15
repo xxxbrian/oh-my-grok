@@ -518,11 +518,11 @@ fn session_info_content(state: &UsageInfoModalState, theme: &Theme) -> TabConten
     let mut prev_compact = false;
     for row in text.lines() {
         let trimmed = row.trim_start();
-        // The auth method (and its `grok login` upsell) is deliberately
+        // The auth method (and its `omg login` upsell) is deliberately
         // not part of this surface.
         if trimmed.is_empty()
             || trimmed.starts_with("Auth method:")
-            || trimmed.starts_with("Run `grok login`")
+            || trimmed.starts_with("Run `omg login`")
         {
             continue;
         }
@@ -757,7 +757,7 @@ mod tests {
     fn session_info_tab_spaces_groups_and_compacts_model_block() {
         let mut state = state_with_session();
         state.session_text = Some(
-            "  Title: t\n  Auth method: OAuth\n  Run `grok login` to switch.\n  \
+            "  Title: t\n  Auth method: OAuth\n  Run `omg login` to switch.\n  \
              Session ID: sid-123\n  Working directory: /tmp\n  Model: Grok\n  Context: 1 / 2"
                 .to_string(),
         );

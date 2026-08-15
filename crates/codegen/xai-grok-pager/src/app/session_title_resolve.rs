@@ -28,7 +28,7 @@ fn title_key(s: &str) -> String {
 pub(crate) fn title_miss_hint(arg: &str) -> String {
     format!(
         "no session id or title matched {arg:?} for this directory; \
-         try `grok sessions search {arg:?}`"
+         try `omg sessions search {arg:?}`"
     )
 }
 
@@ -77,8 +77,9 @@ pub(crate) fn select_by_title<'a>(
                 .join("\n");
             anyhow::bail!(
                 "Multiple sessions match title {:?}:\n{listing}\n\
-                 Resume by session id instead: grok --resume <session-id>",
-                arg.trim()
+                 Resume by session id instead: {} --resume <session-id>",
+                arg.trim(),
+                xai_grok_config::CLI_NAME
             );
         }
     }

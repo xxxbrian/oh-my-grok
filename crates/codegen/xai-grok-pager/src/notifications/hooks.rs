@@ -118,7 +118,7 @@ mod tests {
     fn test_event() -> NotificationEvent {
         NotificationEvent {
             kind: NotificationEventKind::TurnComplete,
-            title: "Grok".into(),
+            title: xai_grok_config::PRODUCT_NAME.into(),
             body: "test body payload".into(),
             session_id: Some("test-session-123".into()),
         }

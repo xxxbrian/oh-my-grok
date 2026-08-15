@@ -1,4 +1,4 @@
-//! Data APIs for `grok models`. Clients own display.
+//! Data APIs for `omg models`. Clients own display.
 
 use agent_client_protocol as acp;
 use anyhow::Result;

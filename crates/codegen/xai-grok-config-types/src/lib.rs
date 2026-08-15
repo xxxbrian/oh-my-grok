@@ -974,7 +974,7 @@ pub struct RemoteSettings {
     /// When `None` or `Some(false)`, sessions are shown in a flat list.
     #[serde(default)]
     pub session_picker_grouped: Option<bool>,
-    /// Whether the user is allowed to use Grok Build. Set by remote settings
+    /// Whether the user is allowed to use Oh My Grok. Set by remote settings
     /// `grok_build_access_gate` targeting rules. `None` = no server response
     /// yet (client uses own fallback check). `Some(false)` = blocked.
     #[serde(default)]
@@ -1048,7 +1048,7 @@ pub struct RemoteSettings {
     /// See `Config::resolve_image_edit`.
     #[serde(default)]
     pub imagine_tools_disabled: Option<Vec<String>>,
-    /// remote settings gate for the `grok workspace` CLI command (Computer Hub
+    /// remote settings gate for the `omg workspace` CLI command (Computer Hub
     /// workspace exposure), from `grok_build_settings.workspace_command_enabled`.
     /// `Some(true)` enables it; `None`/`Some(false)` (the default) keep it off.
     #[serde(default)]
@@ -1099,7 +1099,7 @@ pub struct ContextualHintsRemote {
     /// Word-select tip after double-click fold/nav (settings discoverability).
     #[serde(default)]
     pub word_select: Option<bool>,
-    /// SSH wrap session-load tip (recommend `grok wrap ssh` for remote sessions).
+    /// SSH wrap session-load tip (recommend `omg wrap ssh` for remote sessions).
     #[serde(default)]
     pub ssh_wrap: Option<bool>,
 }

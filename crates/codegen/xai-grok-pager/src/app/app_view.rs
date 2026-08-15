@@ -1019,7 +1019,7 @@ pub struct AppView {
     /// first evaluation at a stable agent-view draw (regardless of outcome),
     /// so later resizes can never re-trigger the tip within this run.
     pub small_screen_tip_evaluated: bool,
-    /// One-shot gate for the SSH `grok wrap` tip: set after the first
+    /// One-shot gate for the SSH `omg wrap` tip: set after the first
     /// evaluation at a stable agent-view draw (the environment gates are
     /// process-constant, so one evaluation decides the run).
     pub ssh_wrap_tip_evaluated: bool,
@@ -5194,7 +5194,7 @@ impl AppView {
         self.small_screen_tip_evaluated = true;
         super::dispatch::show_small_screen_tip(self);
     }
-    /// One-shot SSH `grok wrap` tip trigger, run at the top of every `draw`
+    /// One-shot SSH `omg wrap` tip trigger, run at the top of every `draw`
     /// right after [`Self::maybe_trigger_small_screen_tip`]. The welcome
     /// screen has no ephemeral-tip row, so the first stable agent-view draw
     /// is the earliest surface that can paint a session-load tip. Reads the
@@ -7617,7 +7617,7 @@ pub(crate) mod tests {
     fn apply_auth_meta_clears_gate_on_subscription() {
         let mut app = test_app();
         app.gate = Some(xai_grok_shell::auth::GateInfo {
-            message: "Subscribe to use Grok Build".into(),
+            message: "Subscribe to use Oh My Grok".into(),
             url: Some("https://grok.com/supergrok?referrer=grok-build".into()),
             label: None,
         });

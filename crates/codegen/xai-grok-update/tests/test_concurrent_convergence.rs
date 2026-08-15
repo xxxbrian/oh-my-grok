@@ -7,9 +7,9 @@
 //! Production has three independent downloader paths that can race around a
 //! release:
 //!
-//! 1. TUI startup: `check_update_background` spawns a detached `grok update`
+//! 1. TUI startup: `check_update_background` spawns a detached `omg update`
 //!    (the Ctrl+U path now adopts this child instead of spawning a second).
-//! 2. Explicit `grok update` (incl. the Ctrl+U fallback when there is no
+//! 2. Explicit `omg update` (incl. the Ctrl+U fallback when there is no
 //!    live child).
 //! 3. Leader mode: the hourly checker runs `ensure_latest_on_disk`
 //!    in-process.
@@ -49,7 +49,7 @@ use xai_grok_update::version::installed_on_disk_version;
 /// binary, actually runs, and has exactly the expected content (the content
 /// check is what catches a cross-racer temp-file corruption).
 fn assert_active_binary(home: &Path, version: &str, platform: &str, expected_content: &[u8]) {
-    let link = home.join("bin").join("grok");
+    let link = home.join("bin").join("omg");
     assert!(link.is_symlink(), "grok must be a symlink");
     let resolved = dunce::canonicalize(&link)
         .unwrap_or_else(|e| panic!("active grok symlink does not resolve: {e}"));
@@ -93,7 +93,7 @@ fn fake_managed_install(version: &str) {
     .unwrap();
     std::os::unix::fs::symlink(
         std::path::Path::new("../downloads").join(&name),
-        bin.join("grok"),
+        bin.join("omg"),
     )
     .unwrap();
 }
@@ -185,7 +185,7 @@ async fn ensure_latest_downloads_once_then_converges_without_redownload() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Convergence: explicit `grok update` (the Ctrl+U fallback path) finds the
+// Convergence: explicit `omg update` (the Ctrl+U fallback path) finds the
 // binary another process already installed and skips the download — while
 // still returning the target version so stale leaders get signalled.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -485,7 +485,7 @@ async fn concurrent_different_version_installs_do_not_corrupt_each_other() {
 
     // The active symlink points at whichever racer swapped last; it must
     // resolve and run regardless.
-    let resolved = dunce::canonicalize(home.join("bin").join("grok")).unwrap();
+    let resolved = dunce::canonicalize(home.join("bin").join("omg")).unwrap();
     assert_eq!(std::fs::read(&resolved).unwrap(), artifact);
     let name = resolved.file_name().unwrap().to_string_lossy().to_string();
     assert!(

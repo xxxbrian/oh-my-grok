@@ -13,7 +13,7 @@
 //! parsed again. Non-table values are dropped with a warning.
 //!
 //! Warnings are retained on `Config::config_warnings` and surfaced by
-//! `grok inspect`.
+//! `omg inspect`.
 
 use indexmap::IndexMap;
 use serde::Serialize;
@@ -273,7 +273,7 @@ pub(crate) fn log_config_warnings(warnings: &[ConfigWarning]) {
     if !warnings.is_empty() {
         tracing::warn!(
             warnings = warnings.len(),
-            "config: parsed with warnings; run `grok inspect` for details"
+            "config: parsed with warnings; run `omg inspect` for details"
         );
     }
 }

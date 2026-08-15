@@ -422,7 +422,7 @@ pub async fn run_headless(
 
     // Headless's only transport is the relay (no IPC fallback), so a session is required.
     const HEADLESS_NO_SESSION: &str = "Headless mode requires a grok.com session. \
-        Run `grok login` to sign in, or use `grok agent stdio` for API-key access.";
+        Run `omg login` to sign in, or use `omg agent stdio` for API-key access.";
 
     // Clean up orphaned upload queue temp files from previous sessions (best-effort).
     // Uses DEFAULT_MAX_AGE to stay in sync with the upload queue's retry policy.
@@ -525,7 +525,7 @@ pub async fn run_headless(
             // Print to stderr (not logger) so user sees it
             eprintln!();
             eprintln!(
-                "Open Grok Build: {} (press Enter to open in browser)",
+                "Open Oh My Grok: {} (press Enter to open in browser)",
                 grok_code_url
             );
             eprintln!();

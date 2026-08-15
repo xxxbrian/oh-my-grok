@@ -217,14 +217,33 @@ pub fn kill_process_with_signal(pid: u32, signal: KillSignal) -> std::io::Result
         terminate.map_err(|e| std::io::Error::other(format!("TerminateProcess({pid}): {e}")))
     }
 }
-/// True if `pid` is a grok process; pairs with [`kill_process_by_pid`] to avoid killing a recycled PID.
-/// Best-effort on macOS/BSD (liveness-only via `kill -0`), exact on Linux (/proc cmdline) and Windows (image path).
+fn matches_cli_process_name(path: &std::path::Path) -> bool {
+    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+        return false;
+    };
+    let name = name.to_ascii_lowercase();
+    let name = name.strip_suffix(".exe").unwrap_or(&name);
+    name == xai_grok_config::CLI_NAME
+        || name == "grok"
+        || name.starts_with("grok-")
+        || name.starts_with("xai-grok-")
+        || name.starts_with("xai_grok_")
+}
+
+/// True if `pid` is an `omg` or legacy `grok` process; pairs with
+/// [`kill_process_by_pid`] to avoid killing a recycled PID.
+/// Best-effort on macOS/BSD (liveness-only via `kill -0`), name-matched on
+/// Linux (`/proc` argv[0]) and Windows (image path).
 pub fn is_grok_process(pid: u32) -> bool {
     #[cfg(target_os = "linux")]
     {
         let cmdline_path = format!("/proc/{pid}/cmdline");
         match std::fs::read(&cmdline_path) {
-            Ok(data) => String::from_utf8_lossy(&data).contains("grok"),
+            Ok(data) => {
+                let argv0 = data.split(|byte| *byte == 0).next().unwrap_or_default();
+                let argv0 = String::from_utf8_lossy(argv0);
+                matches_cli_process_name(std::path::Path::new(argv0.as_ref()))
+            }
             Err(_) => false,
         }
     }
@@ -254,9 +273,8 @@ pub fn is_grok_process(pid: u32) -> bool {
         if result.is_err() {
             return false;
         }
-        String::from_utf16_lossy(&buf[..size as usize])
-            .to_ascii_lowercase()
-            .contains("grok")
+        let image_path = String::from_utf16_lossy(&buf[..size as usize]);
+        matches_cli_process_name(std::path::Path::new(image_path.as_ref()))
     }
     #[cfg(all(not(target_os = "linux"), not(windows)))]
     {
@@ -273,7 +291,7 @@ pub fn is_grok_process(pid: u32) -> bool {
 /// name-matches via `ps` (not liveness-only), so eviction never SIGKILLs a
 /// recycled PID now owned by an unrelated process. Linux/Windows already match
 /// exactly, so this delegates there. Use the permissive [`is_grok_process`] for
-/// operator-driven `grok leaders kill`.
+/// operator-driven `omg leader kill`.
 pub fn is_grok_process_strict(pid: u32) -> bool {
     #[cfg(all(not(target_os = "linux"), not(windows)))]
     {
@@ -289,9 +307,7 @@ pub fn is_grok_process_strict(pid: u32) -> bool {
                     .next()
                     .map(str::trim)
                     .filter(|line| !line.is_empty())
-                    .and_then(|line| std::path::Path::new(line).file_name())
-                    .and_then(|name| name.to_str())
-                    .is_some_and(|name| name.to_ascii_lowercase().contains("grok"))
+                    .is_some_and(|line| matches_cli_process_name(std::path::Path::new(line)))
             }
             _ => false,
         }
@@ -404,6 +420,27 @@ mod tests {
     fn is_grok_process_self_true_impossible_pid_false() {
         assert!(is_grok_process(std::process::id()));
         assert!(!is_grok_process(u32::MAX));
+    }
+    #[test]
+    fn cli_process_name_accepts_omg_and_legacy_grok() {
+        for name in [
+            "omg",
+            "omg.exe",
+            "grok",
+            "grok-1.2.3-linux-x86_64",
+            "xai-grok-pager",
+            "xai_grok_shell_base-test",
+        ] {
+            assert!(
+                matches_cli_process_name(std::path::Path::new(name)),
+                "{name}"
+            );
+        }
+        assert!(!matches_cli_process_name(std::path::Path::new("agent")));
+        assert!(!matches_cli_process_name(std::path::Path::new("not-grok")));
+        assert!(!matches_cli_process_name(std::path::Path::new(
+            "/tmp/oh-my-grok/sleep"
+        )));
     }
     #[test]
     fn is_grok_process_strict_self_true_impossible_pid_false() {

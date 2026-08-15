@@ -5,7 +5,7 @@
 //! session initialization crashes, and protocol regressions.
 //!
 //! The tests exercise:
-//! - **Smoke** (`grok --version`): binary loads without crashing
+//! - **Smoke** (`omg --version`): binary loads without crashing
 //! - **ACP stdio** (`grok agent stdio`): full protocol lifecycle via ClientSideConnection
 //!
 //! Tests are `#[ignore]`d by default — they require a pre-built binary.
@@ -367,7 +367,7 @@ async fn test_headless_free_usage_exhausted_prints_paywall_message() {
     assert_no_crashes(&result.stderr);
     let combined = format!("{}\n{}", result.stdout, result.stderr);
     assert!(
-        combined.contains("reached your free Grok Build usage limit"),
+        combined.contains("reached your free Oh My Grok usage limit"),
         "expected the free-usage paywall message\nstdout:\n{}\nstderr tail:\n{}",
         result.stdout,
         stderr_tail(&result.stderr, 1000)

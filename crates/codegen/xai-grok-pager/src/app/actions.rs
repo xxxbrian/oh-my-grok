@@ -340,7 +340,7 @@ pub enum Action {
     /// duration. The dispatch handler renders + writes the file and arms
     /// `AppView::pending_pager_path`; the event loop does the suspend/restore.
     OpenTranscriptPager,
-    /// Minimal mode (`grok --minimal`): re-print the most-recently committed
+    /// Minimal mode (`omg --minimal`): re-print the most-recently committed
     /// folded block (collapsed reasoning / truncated tool output) into native
     /// scrollback, fully expanded, below the conversation (design decision K10).
     /// Bound to `Ctrl+E` and the `/expand` command. No-op outside minimal mode

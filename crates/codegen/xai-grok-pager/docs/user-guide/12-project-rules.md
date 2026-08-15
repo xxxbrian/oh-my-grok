@@ -163,7 +163,7 @@ my-monorepo/
 To add rules for a single session without editing files, pass `--rules` (alias `--append-system-prompt`):
 
 ```bash
-grok --rules "Always use TypeScript. Prefer functional components."
+omg --rules "Always use TypeScript. Prefer functional components."
 ```
 
 Grok appends this text to the session's system prompt. Use it for session-specific customization.
@@ -210,7 +210,7 @@ These are all optional. See the respective guides for details on each.
 
 ## Inspecting Loaded Rules
 
-Use `grok inspect` to see all loaded project instructions:
+Use `omg inspect` to see all loaded project instructions:
 
 ```bash
 grok inspect

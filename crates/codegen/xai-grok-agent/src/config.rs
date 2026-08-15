@@ -390,7 +390,7 @@ fn plan_toolset() -> ToolServerConfig {
         behavior_preset: None,
     }
 }
-/// Grok Build + plan mode toolset.
+/// Oh My Grok + plan mode toolset.
 ///
 /// Extends the default `grok-build` toolset with plan mode tools:
 /// `enter_plan_mode`, `exit_plan_mode`, and `ask_user_question`.
@@ -476,7 +476,7 @@ fn orchestrator_toolset() -> ToolServerConfig {
         behavior_preset: None,
     }
 }
-/// Grok Build + plan mode toolset WITHOUT subagent tools.
+/// Oh My Grok + plan mode toolset WITHOUT subagent tools.
 ///
 /// Same as `grok_build_plan_toolset` but excludes `TaskTool`,
 /// `TaskOutputTool`, and `KillTaskTool`. Use this when the shell
@@ -510,7 +510,7 @@ fn grok_build_plan_no_subagents_toolset() -> ToolServerConfig {
         behavior_preset: None,
     }
 }
-/// Default Grok Build toolset + `ask_user_question`.
+/// Default Oh My Grok toolset + `ask_user_question`.
 ///
 /// Same as `default_grok_build_toolset` with the `AskUserQuestionTool` added,
 /// allowing the agent to ask structured questions without full plan mode.
@@ -1521,47 +1521,47 @@ impl AgentDefinition {
     pub fn default_grok_build() -> Self {
         Self::base(
             BuiltinAgentName::GrokBuild,
-            "Grok Build agent for software engineering tasks.",
+            "Oh My Grok agent for software engineering tasks.",
         )
     }
-    /// Grok Build Concise agent definition — concise output format for SFT/RL.
+    /// Oh My Grok Concise agent definition — concise output format for SFT/RL.
     pub fn grok_build_concise() -> Self {
         Self {
             tool_config: grok_build_concise_toolset(),
             agents_md: false,
             ..Self::base(
                 BuiltinAgentName::GrokBuildConcise,
-                "Grok Build agent with concise output format.",
+                "Oh My Grok agent with concise output format.",
             )
         }
     }
-    /// Grok Build agent with plan mode tools.
+    /// Oh My Grok agent with plan mode tools.
     pub fn grok_build_plan() -> Self {
         Self {
             tool_config: grok_build_plan_toolset(),
             ..Self::base(
                 BuiltinAgentName::GrokBuildPlan,
-                "Grok Build agent with plan mode support.",
+                "Oh My Grok agent with plan mode support.",
             )
         }
     }
-    /// Grok Build + plan mode WITHOUT subagent tools.
+    /// Oh My Grok + plan mode WITHOUT subagent tools.
     pub fn grok_build_plan_no_subagents() -> Self {
         Self {
             tool_config: grok_build_plan_no_subagents_toolset(),
             ..Self::base(
                 BuiltinAgentName::GrokBuildPlanNoSubagents,
-                "Grok Build agent with plan mode (no subagents).",
+                "Oh My Grok agent with plan mode (no subagents).",
             )
         }
     }
-    /// Default Grok Build agent with the `ask_user_question` tool.
+    /// Default Oh My Grok agent with the `ask_user_question` tool.
     pub fn grok_build_ask_user() -> Self {
         Self {
             tool_config: grok_build_ask_user_toolset(),
             ..Self::base(
                 BuiltinAgentName::GrokBuildAskUser,
-                "Grok Build agent with ask-user-question tool.",
+                "Oh My Grok agent with ask-user-question tool.",
             )
         }
     }
@@ -1633,7 +1633,7 @@ impl AgentDefinition {
             )
         }
     }
-    /// Grok Build Orchestrator — GBL model with full GrokBuild tools
+    /// Oh My Grok Orchestrator — GBL model with full GrokBuild tools
     /// (skills, MCPs, plan mode) that delegates coding/exploration to
     /// subagents.
     ///

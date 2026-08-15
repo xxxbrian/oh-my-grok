@@ -1487,7 +1487,8 @@ fn make_version_mismatch_notification(
                 "leaderVersion": leader_version,
                 "message": format!(
                     "Client version {client_version} differs from leader version \
-                     {leader_version}. Restart the grok binary to use the same version."
+                     {leader_version}. Restart the {} binary to use the same version.",
+                    xai_grok_config::CLI_NAME
                 )
             }
         })
@@ -4440,6 +4441,12 @@ mod tests {
         assert_eq!(json["method"], "x.ai/leader/version_mismatch");
         assert_eq!(json["params"]["clientVersion"], "0.1.157");
         assert_eq!(json["params"]["leaderVersion"], "0.1.150");
+        assert!(
+            json["params"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("omg binary")
+        );
         assert!(
             json["params"]["message"]
                 .as_str()
