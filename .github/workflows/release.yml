@@ -1,0 +1,186 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Linux x86_64
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    outputs:
+      grok_version: ${{ steps.metadata.outputs.grok_version }}
+      omg_version: ${{ steps.metadata.outputs.omg_version }}
+      release_asset: ${{ steps.metadata.outputs.release_asset }}
+      release_tag: ${{ steps.metadata.outputs.release_tag }}
+      source_sha: ${{ steps.metadata.outputs.source_sha }}
+      upstream_commit: ${{ steps.metadata.outputs.upstream_commit }}
+
+    env:
+      TARGET: x86_64-unknown-linux-gnu
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Resolve release metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t lock_lines < upstream.lock
+          if [[ ${#lock_lines[@]} -ne 2 ]]; then
+            echo "upstream.lock must contain exactly commit and version lines" >&2
+            exit 1
+          fi
+
+          read -r commit_key upstream_commit commit_extra <<< "${lock_lines[0]}"
+          read -r version_key grok_version version_extra <<< "${lock_lines[1]}"
+          if [[ $commit_key != commit || ! $upstream_commit =~ ^[0-9a-f]{40}$ || -n ${commit_extra:-} ]]; then
+            echo "invalid commit entry in upstream.lock" >&2
+            exit 1
+          fi
+          if [[ $version_key != version || -z $grok_version || -n ${version_extra:-} ]]; then
+            echo "invalid version entry in upstream.lock" >&2
+            exit 1
+          fi
+
+          cargo_version=$(cargo metadata --locked --format-version 1 --no-deps |
+            jq -er '[.packages[] | select(.name == "xai-grok-version") | .version]
+              | if length == 1 then .[0] else error("missing package") end')
+          changelog_version=$(awk '$1 == "#" && $2 ~ /^[0-9]+\.[0-9]+\.[0-9]+/ {
+            print $2
+            exit
+          }' crates/codegen/xai-grok-shell/CHANGELOG.md)
+          if [[ $grok_version != "$cargo_version" || $grok_version != "$changelog_version" ]]; then
+            echo "upstream version mismatch: lock=$grok_version cargo=$cargo_version changelog=$changelog_version" >&2
+            exit 1
+          fi
+
+          source_sha=$(git rev-parse HEAD)
+          if [[ $source_sha != "$GITHUB_SHA" ]]; then
+            echo "checked-out commit does not match GITHUB_SHA" >&2
+            exit 1
+          fi
+
+          commit_epoch=$(git show -s --format=%ct HEAD)
+          commit_date=$(date -u -d "@$commit_epoch" +%Y%m%d)
+          omg_version="0.${commit_date}.${GITHUB_RUN_NUMBER}"
+          release_tag="v${omg_version}"
+          release_asset="omg-${release_tag}-${TARGET}.tar.gz"
+
+          existing_tag=$(git ls-remote --tags origin "refs/tags/${release_tag}")
+          if [[ -n $existing_tag ]]; then
+            echo "release tag already exists: $release_tag" >&2
+            exit 1
+          fi
+
+          {
+            echo "GROK_VERSION=$grok_version"
+            echo "OMG_VERSION=$omg_version"
+            echo "UPSTREAM_COMMIT=$upstream_commit"
+            echo "RELEASE_TAG=$release_tag"
+            echo "RELEASE_ASSET=$release_asset"
+          } >> "$GITHUB_ENV"
+          {
+            echo "grok_version=$grok_version"
+            echo "omg_version=$omg_version"
+            echo "release_asset=$release_asset"
+            echo "release_tag=$release_tag"
+            echo "source_sha=$source_sha"
+            echo "upstream_commit=$upstream_commit"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install build tools
+        run: cargo install dotslash --locked --version 0.5.7
+
+      - name: Build
+        run: |
+          cargo build --locked \
+            --package xai-grok-pager-bin \
+            --bin omg \
+            --target "$TARGET" \
+            --profile release-dist \
+            --features release-dist
+
+      - name: Strip and smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="target/${TARGET}/release-dist/omg"
+          strip "$binary"
+          "$binary" --version | tee /dev/stderr | grep -F \
+            "omg ${OMG_VERSION} (grok ${GROK_VERSION},"
+          "$binary" --help > /dev/null
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_dir="dist/package"
+          mkdir -p "$package_dir"
+          install -m 0755 "target/${TARGET}/release-dist/omg" "$package_dir/omg"
+          install -m 0644 LICENSE THIRD-PARTY-NOTICES "$package_dir/"
+          tar -C "$package_dir" -czf "dist/${RELEASE_ASSET}" \
+            omg LICENSE THIRD-PARTY-NOTICES
+          cd dist
+          sha256sum "$RELEASE_ASSET" > SHA256SUMS
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-assets
+          path: |
+            dist/${{ env.RELEASE_ASSET }}
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  release:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    env:
+      GROK_VERSION: ${{ needs.build.outputs.grok_version }}
+      OMG_VERSION: ${{ needs.build.outputs.omg_version }}
+      RELEASE_ASSET: ${{ needs.build.outputs.release_asset }}
+      RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+      SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
+      UPSTREAM_COMMIT: ${{ needs.build.outputs.upstream_commit }}
+
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v8
+        with:
+          name: release-assets
+          path: dist
+
+      - name: Verify checksums
+        working-directory: dist
+        run: sha256sum --check SHA256SUMS
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            "dist/${RELEASE_ASSET}" \
+            dist/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_SHA" \
+            --title "Oh My Grok ${OMG_VERSION}" \
+            --notes "Based on Grok ${GROK_VERSION} at upstream ${UPSTREAM_COMMIT}. OMG source: ${SOURCE_SHA}." \
+            --latest

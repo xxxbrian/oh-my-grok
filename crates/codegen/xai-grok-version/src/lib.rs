@@ -9,6 +9,12 @@ pub const VERSION: &str = match option_env!("GROK_VERSION") {
     None => env!("CARGO_PKG_VERSION"),
 };
 
+/// User-facing version of the Oh My Grok distribution.
+pub const OMG_VERSION: &str = match option_env!("OMG_VERSION") {
+    Some(v) => v,
+    None => "0.0.0-dev",
+};
+
 /// [`TEST_VERSION_ENV`] override first, then [`VERSION`]. Trimmed so
 /// non-semver-aware callers can pass the result straight into parsing.
 pub fn installed() -> String {

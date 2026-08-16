@@ -1119,7 +1119,7 @@ async fn run_agent_command(
         eprintln!(
             "Oh My Grok (pager) - v{}",
             xai_grok_version::display_version_with_commit(
-                env!("VERSION_WITH_COMMIT"),
+                env!("OMG_VERSION_WITH_COMMIT"),
                 xai_grok_update::channel_label(),
             )
         );
@@ -1801,7 +1801,10 @@ fn version_text(channel_label: &str) -> String {
     format!(
         "{} {}\n",
         xai_grok_config::CLI_NAME,
-        xai_grok_version::display_version_with_commit(env!("VERSION_WITH_COMMIT"), channel_label,)
+        xai_grok_version::display_version_with_commit(
+            env!("OMG_VERSION_WITH_COMMIT"),
+            channel_label,
+        )
     )
 }
 fn write_version(writer: &mut impl std::io::Write, channel_label: &str) -> std::io::Result<()> {
@@ -1988,7 +1991,8 @@ async fn async_main(args: PagerArgs) -> Result<()> {
             Command::Version { json } => {
                 if json {
                     let payload = serde_json::json!({
-                        "currentVersion": env!("VERSION_WITH_COMMIT"),
+                        "currentVersion": env!("OMG_VERSION_WITH_COMMIT"),
+                        "grokVersion": env!("VERSION_WITH_COMMIT"),
                         "channel": xai_grok_update::channel_name().unwrap_or("unknown"),
                     });
                     println!("{}", serde_json::to_string(&payload)?);
@@ -2627,7 +2631,8 @@ mod tests {
             write_version(&mut output, label).unwrap();
             let output = String::from_utf8(output).unwrap();
             assert!(output.starts_with("omg "));
-            assert!(output.contains(env!("VERSION_WITH_COMMIT")));
+            assert!(output.contains(env!("OMG_VERSION_WITH_COMMIT")));
+            assert!(env!("OMG_VERSION_WITH_COMMIT").contains(xai_grok_version::VERSION));
             assert!(output.ends_with(expected_suffix), "{output:?}");
         }
     }
