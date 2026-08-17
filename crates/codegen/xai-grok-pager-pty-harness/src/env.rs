@@ -30,20 +30,10 @@ fn local_pager_binary_path() -> Result<PathBuf> {
 }
 
 fn ensure_local_pager_binary(binary: &std::path::Path) -> Result<()> {
-    if binary.exists() {
-        return Ok(());
-    }
-
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
     let mut cmd = Command::new(&cargo);
     cmd.current_dir(workspace_root()?)
-        .args([
-            "build",
-            "-p",
-            "xai-grok-pager-bin",
-            "--bin",
-            "omg",
-        ])
+        .args(["build", "-p", "xai-grok-pager-bin", "--bin", "omg"])
         .stdin(Stdio::null())
         .envs(xai_tty_utils::pager_env());
     xai_tty_utils::detach_std_command(&mut cmd);
