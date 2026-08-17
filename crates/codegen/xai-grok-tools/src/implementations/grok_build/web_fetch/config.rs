@@ -2,6 +2,7 @@
 
 use std::time::Duration;
 
+use ipnet::IpNet;
 use serde::{Deserialize, Serialize};
 
 use crate::register_resource;
@@ -46,6 +47,11 @@ pub struct WebFetchParams {
     /// allow_local = true` or `GROK_WEB_FETCH_ALLOW_LOCAL=1`.
     #[serde(default)]
     pub allow_local: Option<bool>,
+    /// Non-public address ranges that may bypass the SSRF IP check. This is an
+    /// OMG-only exception list loaded from `$GROK_HOME/omg.toml`; empty by
+    /// default so upstream behavior is unchanged.
+    #[serde(default)]
+    pub ssrf_allowed_cidrs: Vec<IpNet>,
 }
 
 register_resource!("grok_build", "WebFetch", WebFetchParams);

@@ -31,6 +31,7 @@ base64 = { workspace = true }
 crc32fast = { workspace = true }
 ignore = { workspace = true }
 infer = { workspace = true }
+ipnet = { workspace = true }
 globset = { workspace = true }
 image = { workspace = true, features = ["png", "jpeg", "gif", "webp", "bmp", "tiff", "ico"] }
 kamadak-exif = { workspace = true, optional = true }

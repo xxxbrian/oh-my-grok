@@ -3,6 +3,8 @@
 //! Policy:
 //! - Non-public addresses (loopback, RFC 1918, link-local, CGNAT, TEST-NET,
 //!   multicast, etc.) are blocked by default.
+//! - OMG config may allow specific non-public CIDRs. Unlisted addresses keep
+//!   the upstream blocking behavior.
 //! - Local access is opt-in via tool params (`WebFetchParams::allow_local`,
 //!   set from `[toolset.web_fetch] allow_local` or `GROK_WEB_FETCH_ALLOW_LOCAL=1`).
 //!   Even when enabled, only **explicit** loopback hosts are allowed
@@ -13,6 +15,7 @@
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
+use ipnet::IpNet;
 use url::Url;
 
 use super::error::WebFetchError;
@@ -110,10 +113,19 @@ fn is_loopback_addr(ip: IpAddr) -> bool {
 
 /// Whether a resolved address is blocked for this request host.
 ///
-/// Dual-gate: even with local binding allowed, only explicit loopback hosts
-/// may use loopback IPs; private/link-local never open via this flag.
-pub(crate) fn is_blocked_for_host(ip: IpAddr, host: &str, allow_local: bool) -> bool {
+/// Explicitly configured CIDRs are allowed first. Otherwise, even with local
+/// binding allowed, only explicit loopback hosts may use loopback IPs;
+/// private/link-local never open via that flag.
+pub(crate) fn is_blocked_for_host(
+    ip: IpAddr,
+    host: &str,
+    allow_local: bool,
+    allowed_cidrs: &[IpNet],
+) -> bool {
     if !is_non_public_ip(ip) {
+        return false;
+    }
+    if is_allowed_by_cidr(ip, allowed_cidrs) {
         return false;
     }
     if allow_local && is_loopback_addr(ip) && is_explicit_local_host(host) {
@@ -122,12 +134,26 @@ pub(crate) fn is_blocked_for_host(ip: IpAddr, host: &str, allow_local: bool) -> 
     true
 }
 
+fn is_allowed_by_cidr(ip: IpAddr, allowed_cidrs: &[IpNet]) -> bool {
+    let mapped_v4 = match ip {
+        IpAddr::V6(v6) => v6.to_ipv4_mapped().map(IpAddr::V4),
+        IpAddr::V4(_) => None,
+    };
+    allowed_cidrs
+        .iter()
+        .any(|cidr| cidr.contains(&ip) || mapped_v4.is_some_and(|mapped| cidr.contains(&mapped)))
+}
+
 /// Resolve hostname via DNS and verify none of the resolved addresses are
 /// blocked under the SSRF policy.
 ///
-/// `allow_local` comes from tool config (`WebFetchParams::allow_local`); it is
-/// not read from the environment here so the agent cannot flip the policy.
-pub(crate) async fn check_ssrf(url: &Url, allow_local: bool) -> Result<(), WebFetchError> {
+/// Both policy inputs come from tool config; they are not read from the
+/// environment here so the agent cannot flip the policy.
+pub(crate) async fn check_ssrf(
+    url: &Url,
+    allow_local: bool,
+    allowed_cidrs: &[IpNet],
+) -> Result<(), WebFetchError> {
     let host = url
         .host_str()
         .ok_or_else(|| WebFetchError::SingleLabelHost {
@@ -136,7 +162,7 @@ pub(crate) async fn check_ssrf(url: &Url, allow_local: bool) -> Result<(), WebFe
 
     // If the host is already a literal IP, check it directly.
     if let Ok(ip) = host.parse::<IpAddr>() {
-        if is_blocked_for_host(ip, host, allow_local) {
+        if is_blocked_for_host(ip, host, allow_local, allowed_cidrs) {
             return Err(WebFetchError::SsrfBlocked {
                 host: host.to_string(),
                 ip,
@@ -165,7 +191,7 @@ pub(crate) async fn check_ssrf(url: &Url, allow_local: bool) -> Result<(), WebFe
     // that resolves to 127.0.0.1 stays blocked.
     addrs
         .iter()
-        .find(|addr| is_blocked_for_host(addr.ip(), host, allow_local))
+        .find(|addr| is_blocked_for_host(addr.ip(), host, allow_local, allowed_cidrs))
         .map_or(Ok(()), |addr| {
             Err(WebFetchError::SsrfBlocked {
                 host: host.to_string(),
@@ -186,7 +212,8 @@ mod tests {
         assert!(is_blocked_for_host(
             "10.0.0.1".parse().unwrap(),
             "10.0.0.1",
-            true
+            true,
+            &[],
         ));
     }
 
@@ -240,18 +267,26 @@ mod tests {
         assert!(is_blocked_for_host(
             "127.0.0.1".parse().unwrap(),
             "127.0.0.1",
-            false
+            false,
+            &[],
         ));
         assert!(is_blocked_for_host(
             "127.0.0.2".parse().unwrap(),
             "127.0.0.2",
-            false
+            false,
+            &[],
         ));
-        assert!(is_blocked_for_host("::1".parse().unwrap(), "::1", false));
+        assert!(is_blocked_for_host(
+            "::1".parse().unwrap(),
+            "::1",
+            false,
+            &[],
+        ));
         assert!(is_blocked_for_host(
             "127.0.0.1".parse().unwrap(),
             "localhost",
-            false
+            false,
+            &[],
         ));
     }
 
@@ -260,51 +295,65 @@ mod tests {
         assert!(!is_blocked_for_host(
             "127.0.0.1".parse().unwrap(),
             "127.0.0.1",
-            true
+            true,
+            &[],
         ));
         assert!(!is_blocked_for_host(
             "127.0.0.2".parse().unwrap(),
             "127.0.0.2",
-            true
+            true,
+            &[],
         ));
-        assert!(!is_blocked_for_host("::1".parse().unwrap(), "::1", true));
+        assert!(!is_blocked_for_host(
+            "::1".parse().unwrap(),
+            "::1",
+            true,
+            &[],
+        ));
         assert!(!is_blocked_for_host(
             "127.0.0.1".parse().unwrap(),
             "localhost",
-            true
+            true,
+            &[],
         ));
         assert!(!is_blocked_for_host(
             "127.0.0.1".parse().unwrap(),
             "localhost.",
-            true
+            true,
+            &[],
         ));
         // IPv4-mapped loopback (common dual-stack DNS result for localhost).
         assert!(!is_blocked_for_host(
             "::ffff:127.0.0.1".parse().unwrap(),
             "localhost",
-            true
+            true,
+            &[],
         ));
         assert!(!is_blocked_for_host(
             "::ffff:127.0.0.1".parse().unwrap(),
             "127.0.0.1",
-            true
+            true,
+            &[],
         ));
         // Metadata / private ranges stay blocked even with the opt-in.
         assert!(is_blocked_for_host(
             "169.254.169.254".parse().unwrap(),
             "169.254.169.254",
-            true
+            true,
+            &[],
         ));
         assert!(is_blocked_for_host(
             "10.0.0.1".parse().unwrap(),
             "10.0.0.1",
-            true
+            true,
+            &[],
         ));
         // Mapped private is still blocked under local opt-in.
         assert!(is_blocked_for_host(
             "::ffff:10.0.0.1".parse().unwrap(),
             "localhost",
-            true
+            true,
+            &[],
         ));
     }
 
@@ -315,17 +364,20 @@ mod tests {
         assert!(is_blocked_for_host(
             "127.0.0.1".parse().unwrap(),
             "evil.example.com",
-            true
+            true,
+            &[],
         ));
         assert!(is_blocked_for_host(
             "127.0.0.1".parse().unwrap(),
             "localtest.me",
-            true
+            true,
+            &[],
         ));
         assert!(is_blocked_for_host(
             "::1".parse().unwrap(),
             "attacker.test",
-            true
+            true,
+            &[],
         ));
     }
 
@@ -350,7 +402,8 @@ mod tests {
         assert!(!is_blocked_for_host(
             "1.1.1.1".parse().unwrap(),
             "1.1.1.1",
-            false
+            false,
+            &[],
         ));
     }
 
@@ -384,12 +437,57 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn allows_only_configured_ipv4_cidr() {
+        let allowed = ["198.18.0.0/15".parse().unwrap()];
+        assert!(!is_blocked_for_host(
+            "198.18.1.1".parse().unwrap(),
+            "fake-ip.example",
+            false,
+            &allowed,
+        ));
+        assert!(is_blocked_for_host(
+            "192.168.1.1".parse().unwrap(),
+            "private.example",
+            false,
+            &allowed,
+        ));
+    }
+
+    #[test]
+    fn allows_configured_ipv6_cidr() {
+        let allowed = ["fd12:3456:789a::/48".parse().unwrap()];
+        assert!(!is_blocked_for_host(
+            "fd12:3456:789a::1".parse().unwrap(),
+            "private.example",
+            false,
+            &allowed,
+        ));
+        assert!(is_blocked_for_host(
+            "fd12:3456:789b::1".parse().unwrap(),
+            "private.example",
+            false,
+            &allowed,
+        ));
+    }
+
+    #[test]
+    fn ipv4_cidr_allows_ipv4_mapped_ipv6() {
+        let allowed = ["198.18.0.0/15".parse().unwrap()];
+        assert!(!is_blocked_for_host(
+            "::ffff:198.18.1.1".parse().unwrap(),
+            "fake-ip.example",
+            false,
+            &allowed,
+        ));
+    }
+
     // ── check_ssrf integration ──────────────────────────────────────────
 
     #[tokio::test]
     async fn ssrf_blocks_ip_literal_private() {
         let url = Url::parse("https://10.0.0.1/secret").unwrap();
-        let result = check_ssrf(&url, false).await;
+        let result = check_ssrf(&url, false, &[]).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("private"));
     }
@@ -397,20 +495,20 @@ mod tests {
     #[tokio::test]
     async fn ssrf_blocks_loopback_literal_by_default() {
         let url = Url::parse("http://127.0.0.1:8080/").unwrap();
-        let result = check_ssrf(&url, false).await;
+        let result = check_ssrf(&url, false, &[]).await;
         assert!(result.is_err());
     }
 
     #[tokio::test]
     async fn ssrf_allows_loopback_literal_when_opted_in() {
         let url = Url::parse("http://127.0.0.1:8080/").unwrap();
-        assert!(check_ssrf(&url, true).await.is_ok());
+        assert!(check_ssrf(&url, true, &[]).await.is_ok());
     }
 
     #[tokio::test]
     async fn ssrf_allows_ip_literal_public() {
         let url = Url::parse("https://1.1.1.1/").unwrap();
-        let result = check_ssrf(&url, false).await;
+        let result = check_ssrf(&url, false, &[]).await;
         assert!(result.is_ok());
     }
 }

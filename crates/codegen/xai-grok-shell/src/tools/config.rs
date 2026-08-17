@@ -153,6 +153,11 @@ impl WebFetchToolConfig {
             allowed_domains,
             context_window_tokens,
             allow_local,
+            ssrf_allowed_cidrs: xai_grok_config::omg_config()
+                .web_fetch
+                .ssrf
+                .allowed_cidrs
+                .clone(),
             ..Default::default()
         }
     }

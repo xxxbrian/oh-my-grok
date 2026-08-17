@@ -46,6 +46,21 @@ The executable and user-facing product name are `omg` and Oh My Grok. The xAI
 self-updater is disabled because it installs upstream `grok` binaries rather
 than this fork; use mise or build from source to update OMG.
 
+## OMG Configuration
+
+OMG-only settings live in `$GROK_HOME/omg.toml` (normally
+`~/.grok/omg.toml`) so the upstream configuration remains compatible. For
+example, allow Surge's IPv4 fake-IP range through the `web_fetch` SSRF check:
+
+```toml
+[web_fetch.ssrf]
+allowed_cidrs = ["198.18.0.0/15"]
+```
+
+The list accepts IPv4 and IPv6 CIDRs. It is empty by default, and only matching
+IP addresses bypass the existing SSRF address check; all other URL, domain,
+DNS, and redirect checks remain unchanged.
+
 ## Versions
 
 `omg --version` reports the fork release, upstream compatibility version, and
@@ -95,12 +110,13 @@ the internal monorepo revision from which that public snapshot was produced.
 
 ## Fork Delta
 
-There are currently no additional product features. The maintained differences
-are:
+The maintained differences are:
 
 - the binary, command examples, and user-facing brand use `omg` / Oh My Grok
 - OMG has an independent release version while retaining the Grok compatibility
   version
+- `omg.toml` can allow selected IPv4 or IPv6 CIDRs through `web_fetch` SSRF
+  address filtering
 - upstream state paths, environment variables, protocols, and formats remain
   unchanged
 - the upstream self-update and reinstall paths are disabled

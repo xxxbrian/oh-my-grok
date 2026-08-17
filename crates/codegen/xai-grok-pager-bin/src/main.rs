@@ -1845,6 +1845,10 @@ fn main() {
     if dispatch_version_if_requested(&args) || dispatch_doctor_if_requested(&args) {
         return;
     }
+    if let Err(error) = xai_grok_config::initialize_omg_config() {
+        eprintln!("Couldn't start {PRODUCT_NAME}: {error}");
+        std::process::exit(2);
+    }
     xai_grok_pager_minimal::install();
     #[cfg(all(feature = "jemalloc", unix))]
     xai_grok_pager::memory_release::install_release_hook(purge_jemalloc_retained_pages);
