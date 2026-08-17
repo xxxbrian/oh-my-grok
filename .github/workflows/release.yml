@@ -11,22 +11,15 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Linux x86_64
-    runs-on: ubuntu-22.04
-    timeout-minutes: 90
-
+  metadata:
+    name: Resolve metadata
+    runs-on: ubuntu-24.04
     outputs:
       grok_version: ${{ steps.metadata.outputs.grok_version }}
       omg_version: ${{ steps.metadata.outputs.omg_version }}
-      release_asset: ${{ steps.metadata.outputs.release_asset }}
       release_tag: ${{ steps.metadata.outputs.release_tag }}
       source_sha: ${{ steps.metadata.outputs.source_sha }}
       upstream_commit: ${{ steps.metadata.outputs.upstream_commit }}
-
-    env:
-      CARGO_INCREMENTAL: "0"
-      TARGET: x86_64-unknown-linux-gnu
 
     steps:
       - name: Check out source
@@ -46,7 +39,8 @@ jobs:
 
           read -r commit_key upstream_commit commit_extra <<< "${lock_lines[0]}"
           read -r version_key grok_version version_extra <<< "${lock_lines[1]}"
-          if [[ $commit_key != commit || ! $upstream_commit =~ ^[0-9a-f]{40}$ || -n ${commit_extra:-} ]]; then
+          if [[ $commit_key != commit || -n ${commit_extra:-} ]] ||
+            [[ ! $upstream_commit =~ ^[0-9a-f]{40}$ ]]; then
             echo "invalid commit entry in upstream.lock" >&2
             exit 1
           fi
@@ -62,7 +56,7 @@ jobs:
             print $2
             exit
           }' crates/codegen/xai-grok-shell/CHANGELOG.md)
-          if [[ $grok_version != "$cargo_version" || $grok_version != "$changelog_version" ]]; then
+          if ! [[ $grok_version == "$cargo_version" && $grok_version == "$changelog_version" ]]; then
             echo "upstream version mismatch: lock=$grok_version cargo=$cargo_version changelog=$changelog_version" >&2
             exit 1
           fi
@@ -77,7 +71,6 @@ jobs:
           commit_date=$(date -u -d "@$commit_epoch" +%Y%m%d)
           omg_version="0.${commit_date}.${GITHUB_RUN_NUMBER}"
           release_tag="v${omg_version}"
-          release_asset="omg-${release_tag}-${TARGET}.tar.gz"
 
           existing_tag=$(git ls-remote --tags origin "refs/tags/${release_tag}")
           if [[ -n $existing_tag ]]; then
@@ -86,20 +79,49 @@ jobs:
           fi
 
           {
-            echo "GROK_VERSION=$grok_version"
-            echo "OMG_VERSION=$omg_version"
-            echo "UPSTREAM_COMMIT=$upstream_commit"
-            echo "RELEASE_TAG=$release_tag"
-            echo "RELEASE_ASSET=$release_asset"
-          } >> "$GITHUB_ENV"
-          {
             echo "grok_version=$grok_version"
             echo "omg_version=$omg_version"
-            echo "release_asset=$release_asset"
             echo "release_tag=$release_tag"
             echo "source_sha=$source_sha"
             echo "upstream_commit=$upstream_commit"
           } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.name }}
+    needs: metadata
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - name: Linux ARM64
+            runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - name: macOS Intel
+            runner: macos-26-intel
+            target: x86_64-apple-darwin
+          - name: macOS Apple Silicon
+            runner: macos-26
+            target: aarch64-apple-darwin
+
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "-C target-cpu=generic -C force-unwind-tables=yes"
+      GROK_VERSION: ${{ needs.metadata.outputs.grok_version }}
+      OMG_VERSION: ${{ needs.metadata.outputs.omg_version }}
+      RELEASE_ASSET: omg-${{ needs.metadata.outputs.release_tag }}-${{ matrix.target }}.tar.gz
+      TARGET: ${{ matrix.target }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.source_sha }}
 
       - name: Install build tools
         run: cargo install dotslash --locked --version 0.5.7
@@ -133,52 +155,60 @@ jobs:
           install -m 0644 LICENSE THIRD-PARTY-NOTICES "$package_dir/"
           tar -C "$package_dir" -czf "dist/${RELEASE_ASSET}" \
             omg LICENSE THIRD-PARTY-NOTICES
-          cd dist
-          sha256sum "$RELEASE_ASSET" > SHA256SUMS
 
-      - name: Upload release assets
+      - name: Upload release asset
         uses: actions/upload-artifact@v7
         with:
-          name: release-assets
-          path: |
-            dist/${{ env.RELEASE_ASSET }}
-            dist/SHA256SUMS
+          name: release-${{ matrix.target }}
+          path: dist/${{ env.RELEASE_ASSET }}
           if-no-files-found: error
           retention-days: 1
           compression-level: 0
 
   release:
     name: Publish
-    needs: build
-    runs-on: ubuntu-22.04
+    needs:
+      - metadata
+      - build
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
 
     env:
-      GROK_VERSION: ${{ needs.build.outputs.grok_version }}
-      OMG_VERSION: ${{ needs.build.outputs.omg_version }}
-      RELEASE_ASSET: ${{ needs.build.outputs.release_asset }}
-      RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
-      SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
-      UPSTREAM_COMMIT: ${{ needs.build.outputs.upstream_commit }}
+      GROK_VERSION: ${{ needs.metadata.outputs.grok_version }}
+      OMG_VERSION: ${{ needs.metadata.outputs.omg_version }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.release_tag }}
+      SOURCE_SHA: ${{ needs.metadata.outputs.source_sha }}
+      UPSTREAM_COMMIT: ${{ needs.metadata.outputs.upstream_commit }}
 
     steps:
       - name: Download release assets
         uses: actions/download-artifact@v8
         with:
-          name: release-assets
+          pattern: release-*
           path: dist
+          merge-multiple: true
 
-      - name: Verify checksums
+      - name: Generate and verify checksums
         working-directory: dist
-        run: sha256sum --check SHA256SUMS
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          assets=(omg-*.tar.gz)
+          if [[ ${#assets[@]} -ne 4 ]]; then
+            echo "expected 4 release assets, found ${#assets[@]}" >&2
+            exit 1
+          fi
+          sha256sum "${assets[@]}" > SHA256SUMS
+          sha256sum --check SHA256SUMS
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$RELEASE_TAG" \
-            "dist/${RELEASE_ASSET}" \
+            dist/omg-*.tar.gz \
             dist/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" \
             --target "$SOURCE_SHA" \
