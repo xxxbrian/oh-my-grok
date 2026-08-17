@@ -123,6 +123,12 @@ jobs:
         with:
           ref: ${{ needs.metadata.outputs.source_sha }}
 
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
       - name: Install build tools
         run: cargo install dotslash --locked --version 0.5.7
 
